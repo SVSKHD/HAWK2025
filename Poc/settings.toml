@@ -1,0 +1,6 @@
+[default]
+max_thresholds = 5
+lot_size = 1.0
+trade_enabled = true
+hawk_trade="https://discord.com/api/webhooks/1338910950031491092/28XHVpTqQxvRzm-BNKsIS1Le4UJMrnyYMY3N0EN20iwS2mqTHGNkctlqKCbhns46wevp"
+hawk_general = "https://discord.com/api/webhooks/1338911216206221406/CylZxn4CIMjNwqPgM2cKGvtUm0TrYhCQiG7ib24dfu7Qq9BbcgTgdeN-qpn-w8PQD585"

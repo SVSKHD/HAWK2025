@@ -1,15 +1,29 @@
 import MetaTrader5 as mt5
 from datetime import datetime, timedelta
 import pytz
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 # Define timeframe
 TIMEFRAME = mt5.TIMEFRAME_M5
 
+# Create a thread pool executor for MT5 functions
+executor = ThreadPoolExecutor(max_workers=2)
 
-def fetch_price(symbol, time_type="start"):
+async def fetch_price(symbol, time_type="start"):
+    """Async function to fetch price data from MetaTrader 5 (MT5)."""
+
+    loop = asyncio.get_running_loop()
+
+    # Run the synchronous MT5 function in a separate thread
+    return await loop.run_in_executor(executor, _sync_fetch_price, symbol, time_type)
+
+def _sync_fetch_price(symbol, time_type):
+    """Synchronous function to fetch price data from MT5 (Runs in a separate thread)."""
+
     if not mt5.initialize():
-        print("MT5 initialization failed")
-        quit()
+        print("❌ MT5 initialization failed")
+        return None
 
     server_timezone = pytz.timezone("Etc/UTC")
 
@@ -28,7 +42,7 @@ def fetch_price(symbol, time_type="start"):
         rates = mt5.copy_rates_from(symbol, TIMEFRAME, time_to_fetch, 1)
 
         if rates is None or len(rates) == 0:
-            print(f"No data retrieved for {time_type} price. Check symbol and timeframe.")
+            print(f"❌ No data retrieved for {time_type} price. Check symbol and timeframe.")
             return None
 
         # Extract and return Close price
@@ -44,7 +58,7 @@ def fetch_price(symbol, time_type="start"):
         tick = mt5.symbol_info_tick(symbol)
 
         if tick is None:
-            print(f"No tick data retrieved for {symbol}. Market might be closed.")
+            print(f"❌ No tick data retrieved for {symbol}. Market might be closed.")
             return None
 
         # Extract and return Bid price
@@ -55,21 +69,6 @@ def fetch_price(symbol, time_type="start"):
         }
 
     else:
-        print("Invalid argument. Use 'start' for 12 AM/11:55 PM price or 'current' for real-time price.")
+        print("❌ Invalid argument. Use 'start' for 12 AM/11:55 PM price or 'current' for real-time price.")
         return None
 
-
-# # Fetch adjusted 12 AM or 11:55 PM price (Returns Close Price)
-# price_12am = fetch_price("EURUSD", "start")
-# if price_12am:
-#     print("\n12 AM / 11:55 PM Close Price:")
-#     print(price_12am['Close_Price'])
-#
-# # Fetch real-time current price using tick data (Returns Bid Price)
-# current_price = fetch_price("EURUSD", "current")
-# if current_price:
-#     print("\nCurrent Bid Price (Tick Data):")
-#     print(current_price["Bid_Price"])
-#
-# # Shutdown MT5
-# mt5.shutdown()
