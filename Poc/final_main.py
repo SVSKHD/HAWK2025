@@ -1,16 +1,18 @@
 from config import symbols
 from logic import ThresholdCalculator
 from price_fetcher import fetch_price
-from executor import executor  # ✅ Import async executor
+from executor import executor_notify  # ✅ Import async executor
 import asyncio
 import json
 from datetime import datetime, timezone, timedelta
-
+import pytz
 
 symbol_list = ['EURUSD']
+START_RESET = "00:00:00"  # ✅ Reset time in UTC
+SERVER_TIMEZONE = pytz.timezone("Etc/GMT-2")  # ✅ Define server timezone (GMT+2)
+
 
 async def process_symbol(symbol):
-    """Async function to fetch price and calculate thresholds with auto-reset at 12 AM."""
     symbol_data = symbols[symbol]
 
     # ✅ Fetch initial start price
@@ -24,24 +26,30 @@ async def process_symbol(symbol):
 
     # ✅ Keep track of the last fetched date
     last_reset_date = datetime.now(timezone.utc).date()
-    # test code
-    # last_reset_date = datetime.now(timezone.utc).date() - timedelta(days=1)  # ✅ Force immediate reset
 
     while True:
         # ✅ Get current UTC time
         current_utc_time = datetime.now(timezone.utc)
+        server_time_obj = datetime.now(SERVER_TIMEZONE)
+        server_time_str = server_time_obj.strftime("%Y-%m-%d %H:%M:%S")
 
-        # ✅ Check if a new day has started (12 AM UTC)
-        if current_utc_time.date() > last_reset_date:
-            print(f"🔄 Resetting start price for {symbol} at 12 AM UTC...")
+        print(f"🕒 Server Time (GMT+2): {server_time_str}")
+
+        # ✅ Check if it's exactly 19:57:00 GMT+2
+        if server_time_obj.strftime("%H:%M:%S") == START_RESET:
+            print(f"🔔 [ALERT] It's {START_RESET} GMT+2! Resetting start price for {symbol}...")
+
             new_start = await fetch_price(symbol, "start")  # Fetch new start price
 
             if new_start:
                 start_price = new_start["Close_Price"]  # ✅ Update start price
                 last_reset_date = current_utc_time.date()  # ✅ Update last reset date
-                print(f"✅ New start price for {symbol}: {start_price}")
+                print(f"✅ [UPDATED] New start price for {symbol}: {start_price}")
+            else:
+                print(f"⚠️ [WARNING] Failed to fetch new start price at 19:57:00 GMT+2.")
 
         # ✅ Fetch the current price
+        print(f"🔄 Fetching latest price for {symbol}...")
         current = await fetch_price(symbol, "current")
 
         if current is None:
@@ -60,14 +68,16 @@ async def process_symbol(symbol):
 
         # 🚀 **Trigger Executor if Threshold Hit**
         if threshold_data["thresholds_hit"]:
-            await executor(threshold_data)  # ✅ Await async executor
+            await executor_notify(threshold_data)  # ✅ Await async executor
 
         await asyncio.sleep(1)  # ✅ Use asyncio.sleep instead of time.sleep
+
 
 async def main():
     """Run all symbols asynchronously."""
     tasks = [process_symbol(symbol) for symbol in symbol_list]
-    await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks)  # ✅ Run all symbol processing tasks
+
 
 # Run the async event loop
 if __name__ == "__main__":

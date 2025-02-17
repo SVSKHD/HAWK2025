@@ -1,7 +1,9 @@
 import json
 from notifications import send_notifications  # ✅ Import async function
+from trade_management import place_order, close_trades_by_symbol
+import MetaTrader5 as mt5
 
-async def executor(data):
+async def executor_notify(data):
     print("Executor received data:")
     print(json.dumps(data, indent=4))  # Pretty print JSON
 
@@ -45,3 +47,21 @@ async def executor(data):
         print(f"  🕒 Server Time: {timestamp['server_time']}")
         print(f"  🇮🇳 IST: {timestamp['IST']}")
 
+
+
+async def get_positions(symbol):
+    if not mt5.initialize():
+        message = "MetaTrader5 initialization failed."
+        # await send_discord_message_type(message, "error", True)
+        print(message)
+        return
+
+    symbol_name = symbol['symbol']
+    positions = mt5.positions_get(symbol=symbol_name)
+    return positions
+
+# use get positions for all the below operations
+
+# async def execute_trades():
+# async def execute_close_trades()
+# async def execute_hedging
