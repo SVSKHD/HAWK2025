@@ -1,3 +1,4 @@
+from HAWK2025.Poc.notifications import send_notifications
 from config import symbols
 from logic import ThresholdCalculator
 from price_fetcher import fetch_price
@@ -38,8 +39,9 @@ async def process_symbol(symbol):
         # ✅ Check if it's exactly 19:57:00 GMT+2
         if server_time_obj.strftime("%H:%M:%S") == START_RESET:
             print(f"🔔 [ALERT] It's {START_RESET} GMT+2! Resetting start price for {symbol}...")
-
             new_start = await fetch_price(symbol, "start")  # Fetch new start price
+            message = f"🔔 [ALERT] It's {START_RESET} GMT+2! Resetting start price for {symbol}... {new_start['Close_Price']}"
+            await send_notifications("trade", message=message)  # ✅ Await here
 
             if new_start:
                 start_price = new_start["Close_Price"]  # ✅ Update start price
