@@ -9,7 +9,7 @@ from datetime import datetime, timezone, timedelta
 import pytz
 
 symbol_list = ['EURUSD']
-START_RESET = "00:00:00"  # ✅ Reset time in UTC
+START_RESET = "00:05:00"  # ✅ Reset time in UTC
 SERVER_TIMEZONE = pytz.timezone("Etc/GMT-2")  # ✅ Define server timezone (GMT+2)
 
 
@@ -36,19 +36,19 @@ async def process_symbol(symbol):
 
         print(f"🕒 Server Time (GMT+2): {server_time_str}")
 
-        # ✅ Check if it's exactly 19:57:00 GMT+2
+        # ✅ Check if it's exactly 00:05:00 GMT+2
         if server_time_obj.strftime("%H:%M:%S") == START_RESET:
             print(f"🔔 [ALERT] It's {START_RESET} GMT+2! Resetting start price for {symbol}...")
             new_start = await fetch_price(symbol, "start")  # Fetch new start price
-            message = f"🔔 [ALERT] It's {START_RESET} GMT+2! Resetting start price for {symbol}... {new_start['Close_Price']}"
-            await send_notifications("trade", message=message)  # ✅ Await here
 
             if new_start:
                 start_price = new_start["Close_Price"]  # ✅ Update start price
                 last_reset_date = current_utc_time.date()  # ✅ Update last reset date
+                message = f"🔔 [ALERT] It's {START_RESET} GMT+2! Resetting start price for {symbol}... {start_price}"
+                await send_notifications("trade", message=message)
                 print(f"✅ [UPDATED] New start price for {symbol}: {start_price}")
             else:
-                print(f"⚠️ [WARNING] Failed to fetch new start price at 19:57:00 GMT+2.")
+                print(f"⚠️ [WARNING] Failed to fetch new start price at {START_RESET} GMT+2.")
 
         # ✅ Fetch the current price
         print(f"🔄 Fetching latest price for {symbol}...")
